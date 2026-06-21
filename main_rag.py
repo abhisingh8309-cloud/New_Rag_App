@@ -23,8 +23,14 @@ if st.sidebar.button('🚀 Process URLs'):
     if not urls:
         status_placeholder.error("⚠️ Please enter at least one valid URL.")
     else:
-        for status in process_urls(urls):
-            status_placeholder.info(status)
+        try:
+            for status in process_urls(urls):
+                status_placeholder.info(status)
+            status_placeholder.success("✅ URLs processed! You can now ask questions.")
+        except ValueError as e:
+            status_placeholder.error(f"❌ Error processing URLs: {e}")
+        except Exception as e:
+            status_placeholder.error(f"❌ Unexpected error: {str(e)}")
 
 # Divider 
 st.markdown("---")
@@ -34,7 +40,6 @@ st.subheader("💭 Ask a Question")
 query = st.text_input("Type yours question here and press Enter:")
 
 # show answer if query is submited
-
 if query:
     try:
         answer, sources = generate_answer(query)
@@ -45,8 +50,10 @@ if query:
 
         if sources:
             st.markdown("### 📚 Sources")
-            for sources in sources.strip().split("\n"):
-                if sources.strip():
-                    st.markdown(f"- {sources}")
+            for source in sources.strip().split("\n"):
+                if source.strip():
+                    st.markdown(f"- {source}")
     except RuntimeError:
         st.error("⚠️ You must process the URLS first before asking a question.")
+    except Exception as e:
+        st.error(f"❌ Error generating answer: {str(e)}")

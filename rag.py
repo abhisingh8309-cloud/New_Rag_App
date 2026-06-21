@@ -3,7 +3,6 @@ from uuid import uuid4
 from dotenv import load_dotenv
 from pathlib import Path
 from langchain.chains import RetrievalQAWithSourcesChain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredURLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
@@ -36,24 +35,22 @@ def initialize_components():
     Initializing llm, embedding model, vector_db
     """
 
-
     global llm,Vector_Store
 
-    if llm is  None:
+    if llm is None:
         llm=ChatGroq(model="llama-3.3-70b-versatile",temperature=0.9, max_tokens=500)
 
-        if Vector_Store is None:
-            ef=HuggingFaceEmbeddings(
-                model_name=EMBEDDING_MODEL,
-                model_kwargs={"trust_remote_code":True}
-            )
+    if Vector_Store is None:
+        ef=HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            model_kwargs={"trust_remote_code":True}
+        )
 
-            Vector_Store=Chroma(
-                collection_name=COLLECTION_NAME,
-                embedding_function=ef,
-                persist_directory=str(VECTOR_STORE_DIR)
-
-            )
+        Vector_Store=Chroma(
+            collection_name=COLLECTION_NAME,
+            embedding_function=ef,
+            persist_directory=str(VECTOR_STORE_DIR)
+        )
 
 def process_urls(urls):
     """ 
@@ -63,27 +60,29 @@ def process_urls(urls):
     """ 
 
     # Print("Initialize Components")
-    yield"Initializing components....✅" 
+    yield "Initializing components....✅" 
     initialize_components()
-    Vector_Store.reset_collection()
 
     #Print("load data")
-    yield"Reseting vector store.....✅"
+    yield "Reseting vector store.....✅"
+    Vector_Store.reset_collection()
     loader=UnstructuredURLLoader(urls=urls)
     data=loader.load()
 
     #Print("Split text")
-    yield " Splitting text into chunks....✅"
+    yield "Splitting text into chunks....✅"
     text_splitter=RecursiveCharacterTextSplitter(
         separators=["\n\n","\n","."," "],
         chunk_size=CHUNK_SIZE
     )       
 
-    docs =text_splitter.split_documents(data)
+    docs=text_splitter.split_documents(data)
 
+    if not docs:
+        raise ValueError("No chunks were created. URLs may have no readable text.")
 
     # Print (" Add docs to vector db")
-    yield"Adding chunks to vector database...✅"
+    yield "Adding chunks to vector database...✅"
     uuids=[str(uuid4()) for _ in range(len(docs))]
     Vector_Store.add_documents(docs,ids=uuids)
 
@@ -95,7 +94,7 @@ def generate_answer(query):
     
     chain=RetrievalQAWithSourcesChain.from_llm(llm=llm,retriever=Vector_Store.as_retriever())
 
-    result= chain.invoke({"question":query}, return_only_outputs=True)
+    result=chain.invoke({"question":query}, return_only_outputs=True)
 
     sources=result.get("sources","")
 

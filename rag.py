@@ -3,7 +3,7 @@ from uuid import uuid4
 from dotenv import load_dotenv
 from pathlib import Path
 from langchain.chains import RetrievalQAWithSourcesChain
-from langchain_community.document_loaders import UnstructuredURLLoader
+from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
@@ -66,7 +66,7 @@ def process_urls(urls):
     #Print("load data")
     yield "Reseting vector store.....✅"
     Vector_Store.reset_collection()
-    loader=UnstructuredURLLoader(urls=urls)
+    loader=WebBaseLoader(urls)
     data=loader.load()
 
     #Print("Split text")
